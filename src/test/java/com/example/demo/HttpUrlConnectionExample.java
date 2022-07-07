@@ -8,6 +8,7 @@ import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import javax.net.ssl.HttpsURLConnection;
@@ -15,33 +16,27 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpUrlConnectionExample {
 
 		private List<String> cookies;
 		private HttpsURLConnection conn;
-
-		private final String USER_AGENT = "Mozilla/5.0";
+		private static final Logger LOG = LoggerFactory.getLogger(HttpUrlConnectionExample.class);
+		private final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.160 Safari/537.36 Edg/100.0.100.0";
 
 		public void main() throws Exception {
 
 			String url = "https://askubuntu.com/users/login";
-			String gmail = "https://askubuntu.com/topbar/inbox?_=1657132214356";
-
+			String askubuntu = "https://askubuntu.com/users/1610836/squzik";
 			HttpUrlConnectionExample http = new HttpUrlConnectionExample();
-
-
 			CookieHandler.setDefault(new CookieManager());
-
 			String page = http.GetPageContent(url);
 			System.out.println(page);
 			String postParams = http.getFormParams(page, "Lucaspw@yandex.ru", "iy5-X34-mZ2-gZY");
-
-
 			http.sendPost(url, postParams);
-
-
-			String result = http.GetPageContent(gmail);
+			String result = http.GetPageContent(askubuntu);
 			System.out.println(result);
 		}
 
@@ -49,8 +44,6 @@ public class HttpUrlConnectionExample {
 
 			URL obj = new URL(url);
 			conn = (HttpsURLConnection) obj.openConnection();
-
-
 			conn.setUseCaches(false);
 			conn.setRequestMethod("POST");
 			conn.setRequestProperty("Host", "accounts.google.com");
@@ -62,13 +55,11 @@ public class HttpUrlConnectionExample {
 				conn.addRequestProperty("Cookie", cookie.split(";", 1)[0]);
 			}
 			conn.setRequestProperty("Connection", "keep-alive");
-			conn.setRequestProperty("Referer", "https://accounts.google.com/ServiceLoginAuth");
+			conn.setRequestProperty("Referer", "https://askubuntu.com/users/login");
 			conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 			conn.setRequestProperty("Content-Length", Integer.toString(postParams.length()));
-
 			conn.setDoOutput(true);
 			conn.setDoInput(true);
-
 
 			DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
 			wr.writeBytes(postParams);
@@ -83,13 +74,12 @@ public class HttpUrlConnectionExample {
 			BufferedReader in =
 					new BufferedReader(new InputStreamReader(conn.getInputStream()));
 			String inputLine;
-			StringBuffer response = new StringBuffer();
+			StringBuilder response = new StringBuilder();
 
 			while ((inputLine = in.readLine()) != null) {
 				response.append(inputLine);
 			}
 			in.close();
-
 
 		}
 
@@ -97,11 +87,8 @@ public class HttpUrlConnectionExample {
 
 			URL obj = new URL(url);
 			conn = (HttpsURLConnection) obj.openConnection();
-
 			conn.setRequestMethod("GET");
-
 			conn.setUseCaches(false);
-
 			conn.setRequestProperty("User-Agent", USER_AGENT);
 			conn.setRequestProperty("Accept",
 					"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
@@ -118,7 +105,7 @@ public class HttpUrlConnectionExample {
 			BufferedReader in =
 					new BufferedReader(new InputStreamReader(conn.getInputStream()));
 			String inputLine;
-			StringBuffer response = new StringBuffer();
+			StringBuilder response = new StringBuilder();
 
 			while ((inputLine = in.readLine()) != null) {
 				response.append(inputLine);
@@ -127,6 +114,7 @@ public class HttpUrlConnectionExample {
 
 			setCookies(conn.getHeaderFields().get("Set-Cookie"));
 
+			LOG.info(response.toString());
 			return response.toString();
 
 		}
@@ -149,7 +137,7 @@ public class HttpUrlConnectionExample {
 					value = username;
 				else if (key.equals("password"))
 					value = password;
-				paramList.add(key + "=" + URLEncoder.encode(value, "UTF-8"));
+				paramList.add(key + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8));
 			}
 
 			StringBuilder result = new StringBuilder();
@@ -157,14 +145,10 @@ public class HttpUrlConnectionExample {
 				if (result.length() == 0) {
 					result.append(param);
 				} else {
-					result.append("&" + param);
+					result.append("&").append(param);
 				}
 			}
 			return result.toString();
-		}
-
-		public List<String> getCookies() {
-			return cookies;
 		}
 
 		public void setCookies(List<String> cookies) {
